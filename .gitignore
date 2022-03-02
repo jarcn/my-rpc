@@ -34,3 +34,4 @@ LOG_HOME_IS_UNDEFINED
 /.nb-gradle/
 /LOG_HOME_IS_UNDEFINED/
 /data/
+.vscode/launch.json
