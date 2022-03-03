@@ -21,7 +21,7 @@ func startServer(addr chan string) {
 	myrpc.Accept(l)
 }
 
-func main() {
+func main_1() {
 	log.SetFlags(0)
 	addr := make(chan string)
 	go startServer(addr)
@@ -48,13 +48,12 @@ func main() {
 	}
 }
 
-func main1() {
+func main() {
 	log.SetFlags(0)
 	addr := make(chan string)
 	go startServer(addr)
 	client, _ := myrpc.Dial("tcp", <-addr)
 	defer func() { _ = client.Close() }()
-
 	time.Sleep(time.Second)
 	// send request & receive response
 	var wg sync.WaitGroup
