@@ -7,6 +7,7 @@ import (
 	myrpc "my-rpc"
 	"my-rpc/codec"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -45,4 +46,29 @@ func main() {
 		cc.ReadBody(&reply)
 		log.Println("reply:", reply)
 	}
+}
+
+func main1() {
+	log.SetFlags(0)
+	addr := make(chan string)
+	go startServer(addr)
+	client, _ := myrpc.Dial("tcp", <-addr)
+	defer func() { _ = client.Close() }()
+
+	time.Sleep(time.Second)
+	// send request & receive response
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			args := fmt.Sprintf("geerpc req %d", i)
+			var reply string
+			if err := client.Call("Foo.Sum", args, &reply); err != nil {
+				log.Fatal("call Foo.Sum error:", err)
+			}
+			log.Println("reply:", reply)
+		}(i)
+	}
+	wg.Wait()
 }
