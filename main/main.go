@@ -12,6 +12,10 @@ import (
 )
 
 func startServer(addr chan string) {
+	var foo Foo
+	if err := myrpc.Register(&foo); err != nil {
+		log.Fatal("register error:", err)
+	}
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Fatal("network error:", err)
@@ -48,7 +52,7 @@ func main_1() {
 	}
 }
 
-func main() {
+func main_2() {
 	log.SetFlags(0)
 	addr := make(chan string)
 	go startServer(addr)
@@ -67,6 +71,48 @@ func main() {
 				log.Fatal("call Foo.Sum error:", err)
 			}
 			log.Println("reply:", reply)
+		}(i)
+	}
+	wg.Wait()
+}
+
+type Foo int
+type Args struct{ Num1, Num2 int }
+
+func (f Foo) Sum(args Args, reply *int) error {
+	*reply = args.Num1 + args.Num2
+	return nil
+}
+
+func (f Foo) Square(args Args, reply *int) error {
+	*reply = args.Num1 * args.Num2
+	return nil
+}
+
+func (f Foo) SquareT(str1, str2 string, reply *string) error {
+	*reply = str1 + str2
+	return nil
+}
+
+func main() {
+	log.SetFlags(0)
+	addr := make(chan string)
+	go startServer(addr)
+	client, _ := myrpc.Dial("tcp", <-addr) //对go的net做了一次封装
+	defer func() { _ = client.Close() }()
+	time.Sleep(time.Second)
+	// send request & receive response
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			args := &Args{Num1: i, Num2: i}
+			var reply int
+			if err := client.Call("Foo.Square", args, &reply); err != nil {
+				log.Fatal("call Foo.Square error:", err)
+			}
+			log.Printf("%d * %d = %d", args.Num1, args.Num2, reply)
 		}(i)
 	}
 	wg.Wait()
