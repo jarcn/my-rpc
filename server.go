@@ -57,7 +57,7 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 		log.Printf("rpc server# invalid magic number %x", opt.MagicNumber)
 		return
 	}
-	f := codec.NewCodecFuncMap[opt.CodecType]
+	f := codec.NewCodecFuncMap[opt.CodecType] //工厂模式
 	if f == nil {
 		log.Printf("rpc server# invalid codec type %s", opt.CodecType)
 		return
@@ -69,6 +69,7 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 var invalidRequest = struct{}{}
 
 func (server *Server) serveCodec(cc codec.Codec) {
+
 	sending := new(sync.Mutex)
 	wg := new(sync.WaitGroup)
 
@@ -129,6 +130,6 @@ func (server *Server) sendResponse(cc codec.Codec, h *codec.Header, body interfa
 func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Println(req.h, req.argv.Elem())
-	req.replyv = reflect.ValueOf(fmt.Sprintf("geerpc resp %d", req.h.Seq))
+	req.replyv = reflect.ValueOf(fmt.Sprintf("geerpc resp %d", req.h.Seq)) //真正处理请求的逻辑
 	server.sendResponse(cc, req.h, req.replyv.Interface(), sending)
 }

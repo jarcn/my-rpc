@@ -27,7 +27,7 @@ func main_1() {
 	go startServer(addr)
 
 	// in fact, following code is like a simple geerpc client
-	conn, _ := net.Dial("tcp", <-addr)
+	conn, _ := net.Dial("tcp", <-addr) //go 自带的网络工具箱
 	defer func() { conn.Close() }()
 
 	time.Sleep(time.Second)
@@ -52,7 +52,7 @@ func main() {
 	log.SetFlags(0)
 	addr := make(chan string)
 	go startServer(addr)
-	client, _ := myrpc.Dial("tcp", <-addr)
+	client, _ := myrpc.Dial("tcp", <-addr) //对go的net做了一次封装
 	defer func() { _ = client.Close() }()
 	time.Sleep(time.Second)
 	// send request & receive response
