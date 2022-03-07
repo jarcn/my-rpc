@@ -20,6 +20,7 @@ func (m *methodType) NumCalls() uint64 {
 
 func (m *methodType) newArgv() reflect.Value {
 	var argv reflect.Value
+	// arg may be a pointer type, or a value type
 	if m.ArgType.Kind() == reflect.Ptr {
 		argv = reflect.New(m.ArgType.Elem())
 	} else {
@@ -29,6 +30,7 @@ func (m *methodType) newArgv() reflect.Value {
 }
 
 func (m *methodType) newReplyv() reflect.Value {
+	// reply must be a pointer type
 	replyv := reflect.New(m.ReplyType.Elem())
 	switch m.ReplyType.Elem().Kind() {
 	case reflect.Map:
@@ -52,13 +54,12 @@ func newService(rcvr interface{}) *service {
 	s.name = reflect.Indirect(s.rcvr).Type().Name()
 	s.typ = reflect.TypeOf(rcvr)
 	if !ast.IsExported(s.name) {
-		log.Fatalf("rpc server# %s is not a valid service name", s.name)
+		log.Fatalf("rpc server: %s is not a valid service name", s.name)
 	}
 	s.registerMethods()
 	return s
 }
 
-//定义什么样的方法能注册在服务上
 func (s *service) registerMethods() {
 	s.method = make(map[string]*methodType)
 	for i := 0; i < s.typ.NumMethod(); i++ {
@@ -79,13 +80,8 @@ func (s *service) registerMethods() {
 			ArgType:   argType,
 			ReplyType: replyType,
 		}
-		log.Printf("rpc server# register %s.%s\n", s.name, method.Name)
-
+		log.Printf("rpc server: register %s.%s\n", s.name, method.Name)
 	}
-}
-
-func isExportedOrBuiltinType(t reflect.Type) bool {
-	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }
 
 func (s *service) call(m *methodType, argv, replyv reflect.Value) error {
@@ -96,4 +92,8 @@ func (s *service) call(m *methodType, argv, replyv reflect.Value) error {
 		return errInter.(error)
 	}
 	return nil
+}
+
+func isExportedOrBuiltinType(t reflect.Type) bool {
+	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }
