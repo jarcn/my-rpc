@@ -8,6 +8,7 @@ import (
 	"log"
 	"my-rpc/codec"
 	"net"
+	"net/http"
 	"reflect"
 	"strings"
 	"sync"
@@ -213,4 +214,42 @@ func (server *Server) sendResponse(cc codec.Codec, h *codec.Header, body interfa
 	if err := cc.Write(h, body); err != nil {
 		log.Println("rpc server# write response error:", err)
 	}
+}
+
+//添加对http协议请求的支持
+const (
+	connected        = "200 connected to my rpc"
+	defaultRPCPath   = "/myrpc"
+	defautlDebugPath = "/debug/myrpc"
+)
+
+//实现 http.Handler 接口
+func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "CONNECT" {
+		w.Header().Set("Content-Type", "text/plain;charset=utf-8")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		io.WriteString(w, "405 must CONNECT\n")
+		return
+	}
+	conn, _, err := w.(http.Hijacker).Hijack()
+	if nil != err {
+		log.Print("rpc hijacking", req.RemoteAddr, ":", err.Error())
+		return
+	}
+	io.WriteString(conn, "HTTP/1.0"+connected+"\n\n")
+	server.ServeConn(conn)
+}
+
+// HandleHTTP registers an HTTP handler for RPC messages on rpcPath,
+// and a debugging handler on debugPath.
+// It is still necessary to invoke http.Serve(), typically in a go statement.
+func (server *Server) HandleHTTP() {
+	http.Handle(defaultRPCPath, server)
+	http.Handle(defautlDebugPath, debugHTTP{server})
+	log.Println("rpc server debug path:", defautlDebugPath)
+}
+
+// HandleHTTP is a convenient approach for default server to register HTTP handlers
+func HandleHTTP() {
+	DefaultServer.HandleHTTP()
 }
