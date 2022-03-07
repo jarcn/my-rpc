@@ -23,7 +23,7 @@ const (
 
 type Discovery interface {
 	Refresh() error                      //从注册中心更新服务列表
-	Update(servers []string) error       // 手动更细服务列表
+	Update(servers []string) error       //手动更细服务列表
 	Get(mode SelectMode) (string, error) //根据负载均衡策略,选择一个服务实例
 	GetAll() ([]string, error)           //返回所有的服务实例
 }
@@ -31,7 +31,7 @@ type Discovery interface {
 type MultiServersDiscovery struct {
 	r       *rand.Rand   //随机数
 	mu      sync.RWMutex //保证请求的时序性
-	servers []string     // 服务列表
+	servers []string     //服务列表
 	index   int          //被命中的服务序号
 }
 
