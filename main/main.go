@@ -68,7 +68,7 @@ func call(addr1, addr2 string) {
 
 func broadcast(addr1, addr2 string) {
 	d := xclient.NewMultiServerDiscovery([]string{"tcp@" + addr1, "tcp@" + addr2})
-	xc := xclient.NewXClient(d, xclient.RandomSelect, nil)
+	xc := xclient.NewXClient(d, xclient.RoundRobinSelect, nil)
 	defer func() { _ = xc.Close() }()
 	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
@@ -97,5 +97,6 @@ func main() {
 
 	time.Sleep(time.Second)
 	call(addr1, addr2)
+	time.Sleep(time.Second * 5)
 	broadcast(addr1, addr2)
 }
