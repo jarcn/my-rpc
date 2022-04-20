@@ -37,3 +37,21 @@ func TestPerimeter(t *testing.T) {
 func Perimeter(a, b float64) float64 {
 	return a + b
 } */
+
+//切片共享底层数组存储地址
+func TestSlice1(t *testing.T) {
+
+	// slice := []int{1, 2, 3, 4, 5}
+	// ns := slice[0:3]
+	// for k, v := range ns {
+	// 	ns[k] = v + 1
+	// }
+	// for k, v := range slice {
+	// 	t.Log(k, v)
+	// }
+
+	m := map[string]string{"a": "A"}
+	m["a"] = "123123"
+	t.Log(m["a"])
+
+}
