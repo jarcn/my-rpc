@@ -9,12 +9,14 @@ import (
 	"time"
 )
 
+//定义注册中心数据结构体
 type MyRegistry struct {
 	timeout time.Duration
 	mu      sync.Mutex
 	severs  map[string]*ServerItem
 }
 
+//注册上的服务实际信息
 type ServerItem struct {
 	Addr  string
 	start time.Time
@@ -25,14 +27,16 @@ const (
 	defaultTimeout = time.Minute * 5
 )
 
+//默认注册中心
+var DefaultMyRegister = New(defaultTimeout)
+
+//创建注册中心
 func New(timeout time.Duration) *MyRegistry {
 	return &MyRegistry{
 		severs:  make(map[string]*ServerItem),
 		timeout: timeout,
 	}
 }
-
-var DefaultMyRegister = New(defaultTimeout)
 
 //添加服务实例接口,如果服务存在则更新start
 func (r *MyRegistry) putServer(addr string) {
@@ -66,9 +70,9 @@ func (r *MyRegistry) aliveServers() []string {
 func (r *MyRegistry) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
-		w.Header().Set("X-Geerpc-Servers", strings.Join(r.aliveServers(), ",")) // keep it simple, server is in req.Header
+		w.Header().Set("X-Myrpc-Servers", strings.Join(r.aliveServers(), ",")) // keep it simple, server is in req.Header
 	case "POST":
-		addr := req.Header.Get("X-Geerpc-Server") // keep it simple, server is in req.Header
+		addr := req.Header.Get("X-Myrpc-Server") // keep it simple, server is in req.Header
 		if addr == "" {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -85,6 +89,7 @@ func (r *MyRegistry) HandleHTTP(registryPath string) {
 	log.Println("rpc registry path:", registryPath)
 }
 
+//准备好接收客户端调用
 func HandleHTTP() {
 	DefaultMyRegister.HandleHTTP(defaultPath)
 }
@@ -105,6 +110,7 @@ func Heartbeat(registry, addr string, duration time.Duration) {
 	}()
 }
 
+//发送心跳检测请求
 func sendHeartbeat(registry, addr string) error {
 	log.Println(addr, "send heart beat to registry", registry)
 	httpClient := &http.Client{}

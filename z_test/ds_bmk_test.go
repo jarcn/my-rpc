@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -42,4 +43,24 @@ func sendData() {
 		return
 	}
 	fmt.Println(string(body))
+}
+
+func TestGet(t *testing.T) {
+	addr := "VVF6+V2H, Papanggo, Tanjung Priok, North Jakarta City, Jakarta, Indonesia"
+	uri := "https://api.nextbillion.io/h/geocode?q=" + url.QueryEscape(addr) + "&key=626737e151e6467abb117363d0b67d04"
+	t.Log(uri)
+
+	res, err := http.Get(uri)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	t.Log(string(body))
 }

@@ -38,7 +38,9 @@ func startServer(registryAddr string, wg *sync.WaitGroup) {
 	var foo Foo
 	l, _ := net.Listen("tcp", ":0")
 	server := myrpc.NewServer()
-	_ = server.Register(&foo)
+	//将服务信息注册到注册中心
+	server.Register(&foo)
+	//服务心跳检查
 	registry.Heartbeat(registryAddr, "tcp@"+l.Addr().String(), 0)
 	wg.Done()
 	server.Accept(l)
@@ -99,16 +101,18 @@ func main() {
 	registryAddr := "http://localhost:9999/myrpc/registry"
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go startRegistry(&wg)
+	go startRegistry(&wg) //启动注册中心
 	wg.Wait()
 
 	time.Sleep(time.Second)
 	wg.Add(2)
+	//注册服务
 	go startServer(registryAddr, &wg)
 	go startServer(registryAddr, &wg)
 	wg.Wait()
 
 	time.Sleep(time.Second)
+	//调用远程服务
 	call(registryAddr)
 	broadcast(registryAddr)
 	time.Sleep(time.Second * 30)

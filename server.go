@@ -207,12 +207,7 @@ func (server *Server) Accept(lis net.Listener) {
 // for each incoming connection.
 func Accept(lis net.Listener) { DefaultServer.Accept(lis) }
 
-// Register publishes in the server the set of methods of the
-// receiver value that satisfy the following conditions:
-//	- exported method of exported type
-//	- two arguments, both of exported type
-//	- the second argument is a pointer
-//	- one return value, of type error
+//注册服务,维护注册列表
 func (server *Server) Register(rcvr interface{}) error {
 	s := newService(rcvr)
 	if _, dup := server.serviceMap.LoadOrStore(s.name, s); dup {
