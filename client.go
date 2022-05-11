@@ -19,25 +19,22 @@ import (
 // Call represents an active RPC.
 type Call struct {
 	Seq           uint64
-	ServiceMethod string      // format "<service>.<method>"
-	Args          interface{} // arguments to the function
-	Reply         interface{} // reply from the function
-	Error         error       // if error occurs, it will be set
-	Done          chan *Call  // Strobes when call is complete.
+	ServiceMethod string      // 格式 "<service>.<method>"，需要调用的服务端方法
+	Args          interface{} // 请求参数
+	Reply         interface{} // 响应参数
+	Error         error       // 错误信息
+	Done          chan *Call  // 请求状态
 }
 
 func (call *Call) done() {
 	call.Done <- call
 }
 
-// Client represents an RPC Client.
-// There may be multiple outstanding Calls associated
-// with a single Client, and a Client may be used by
-// multiple goroutines simultaneously.
+//客户端结构体
 type Client struct {
-	cc       codec.Codec
-	opt      *Option
-	sending  sync.Mutex // protect following
+	cc       codec.Codec //序列化类型
+	opt      *Option     //客户端连接参数
+	sending  sync.Mutex  // protect following
 	header   codec.Header
 	mu       sync.Mutex // protect following
 	seq      uint64
@@ -50,24 +47,7 @@ var _ io.Closer = (*Client)(nil)
 
 var ErrShutdown = errors.New("connection is shut down")
 
-// Close the connection
-func (client *Client) Close() error {
-	client.mu.Lock()
-	defer client.mu.Unlock()
-	if client.closing {
-		return ErrShutdown
-	}
-	client.closing = true
-	return client.cc.Close()
-}
-
-// IsAvailable return true if the client does work
-func (client *Client) IsAvailable() bool {
-	client.mu.Lock()
-	defer client.mu.Unlock()
-	return !client.shutdown && !client.closing
-}
-
+//注册调用方法
 func (client *Client) registerCall(call *Call) (uint64, error) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
@@ -80,26 +60,7 @@ func (client *Client) registerCall(call *Call) (uint64, error) {
 	return call.Seq, nil
 }
 
-func (client *Client) removeCall(seq uint64) *Call {
-	client.mu.Lock()
-	defer client.mu.Unlock()
-	call := client.pending[seq]
-	delete(client.pending, seq)
-	return call
-}
-
-func (client *Client) terminateCalls(err error) {
-	client.sending.Lock()
-	defer client.sending.Unlock()
-	client.mu.Lock()
-	defer client.mu.Unlock()
-	client.shutdown = true
-	for _, call := range client.pending {
-		call.Error = err
-		call.done()
-	}
-}
-
+//发送请求
 func (client *Client) send(call *Call) {
 	// make sure that the client will send a complete request
 	client.sending.Lock()
@@ -130,6 +91,7 @@ func (client *Client) send(call *Call) {
 	}
 }
 
+//接收响应
 func (client *Client) receive() {
 	var err error
 	for err == nil {
@@ -157,6 +119,44 @@ func (client *Client) receive() {
 	}
 	// error occurs, so terminateCalls pending calls
 	client.terminateCalls(err)
+}
+
+// 关闭连接
+func (client *Client) Close() error {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	if client.closing {
+		return ErrShutdown
+	}
+	client.closing = true
+	return client.cc.Close()
+}
+
+// 判断客户端是否可用
+func (client *Client) IsAvailable() bool {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	return !client.shutdown && !client.closing
+}
+
+func (client *Client) removeCall(seq uint64) *Call {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	call := client.pending[seq]
+	delete(client.pending, seq)
+	return call
+}
+
+func (client *Client) terminateCalls(err error) {
+	client.sending.Lock()
+	defer client.sending.Unlock()
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	client.shutdown = true
+	for _, call := range client.pending {
+		call.Error = err
+		call.done()
+	}
 }
 
 // Go invokes the function asynchronously.

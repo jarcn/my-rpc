@@ -16,28 +16,6 @@ type MyRegistry struct {
 	severs  map[string]*ServerItem
 }
 
-//注册上的服务实际信息
-type ServerItem struct {
-	Addr  string
-	start time.Time
-}
-
-const (
-	defaultPath    = "myrpc/registry"
-	defaultTimeout = time.Minute * 5
-)
-
-//默认注册中心
-var DefaultMyRegister = New(defaultTimeout)
-
-//创建注册中心
-func New(timeout time.Duration) *MyRegistry {
-	return &MyRegistry{
-		severs:  make(map[string]*ServerItem),
-		timeout: timeout,
-	}
-}
-
 //添加服务实例接口,如果服务存在则更新start
 func (r *MyRegistry) putServer(addr string) {
 	r.mu.Lock()
@@ -64,6 +42,28 @@ func (r *MyRegistry) aliveServers() []string {
 	}
 	sort.Strings(alive)
 	return alive
+}
+
+//注册上的服务实际信息
+type ServerItem struct {
+	Addr  string
+	start time.Time
+}
+
+const (
+	defaultPath    = "myrpc/registry"
+	defaultTimeout = time.Minute * 5
+)
+
+//默认注册中心
+var DefaultMyRegister = New(defaultTimeout)
+
+//创建注册中心
+func New(timeout time.Duration) *MyRegistry {
+	return &MyRegistry{
+		severs:  make(map[string]*ServerItem),
+		timeout: timeout,
+	}
 }
 
 //使用http协议进行服务提供
